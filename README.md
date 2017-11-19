@@ -2,4 +2,4 @@
 Visual rendering of Schelling's dynamic segregation game and variants of it
 
 Inline-style: 
-![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png)
+![alt text](https://github.com/youcefm/schelling-dynamic-segregation/blob/master/segregation_game_demo2.gif)
