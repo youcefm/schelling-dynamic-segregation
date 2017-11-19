@@ -6,4 +6,4 @@ This project is inspired by Thomas Schelling's 1971 paper ["Dynamic Models of Se
 The current version of the projects allows to visualize the dynamics of the "line" model and modify the parameters: 
 ![alt text](https://github.com/youcefm/schelling-dynamic-segregation/blob/master/segregation_game_demo2.gif)
 
-I hope to make the line model code more general to make modifications and generalizations easier, and in parallel, add the grid model as well as a circle model.
+The next step is to make the line model code more general, providing a solid framework for modifications and generalizations. Other plans include adding the grid model as well as a circle model.
