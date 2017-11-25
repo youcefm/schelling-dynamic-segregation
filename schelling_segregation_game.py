@@ -17,6 +17,7 @@ MYGREEN  = (  40, 100,  40)
 YELLOW 	 = (255, 255, 0)
 SAND 	 = (255, 255, 100)
 
+# Function that prints text on screen
 def text_to_screen(screen, text, x, y, size = 20,
             color = BLACK):
     text = str(text)
@@ -24,18 +25,25 @@ def text_to_screen(screen, text, x, y, size = 20,
     text = font.render(text, True, color)
     screen.blit(text, (x, y))
 
-class Agent(object):
-    """ Define an agent of the game """
-    def __init__(self, color, tag, address, name):
-        self.color = color
-        self.type = tag
-        self.name = name
-        self.address = address
-        self.x = 100 + 15*(self.address - 1)
-        self.y = 300
+# Schelling Model objects
 
-    def draw(self, screen):
-        pygame.draw.circle(screen, self.color, [self.x, self.y], 7)
+class House(object):
+    """ Defines a house where agents can move in and out """
+    def __init__(self, address, size=15, occupant_type ='', occupant_name =1): # remove legacy args when ready
+        self.occupied = True
+        self.occupant_type = occupant_type
+        self.occupant_name = occupant_name
+        self.address = address
+        self.y = 300
+        self.x = 100 + 15*(self.address - 1)
+        self.size = size
+
+    def draw(self, screen): 
+        pygame.draw.rect(screen, RED, [self.x , self.y , self.size, self.size], 1)
+
+    def update_occcupant_info(self, occupant):
+        self.occupant_name = occupant.occupant_name
+        self.occupant_type = occupant.occupant_type
 
 class CityShape(object):
     """ Populate a city with houses following a specific shape  """
@@ -45,7 +53,7 @@ class CityShape(object):
     def init_houses(self):
         houses = {}
         for address in range(1,self.number_houses+1):
-            houses[address] = House(address=address, occupant_type = '', occupant_name = 1) # remove legacy args when ready
+            houses[address] = House(address=address) 
         self.houses = houses
 
     def populate_line(self, init_x=100, init_y=300, padding=15):
@@ -67,8 +75,8 @@ class CityShape(object):
         for address in self.houses:
             house = self.houses[address]
             angle_position = angle*(house.address - 1)  
-            house.x = round((init_x-center_x)*math.cos(angle_position) - (init_y - center_y)*math.sin(angle_position) + center_x
-            house.y = round((init_x-center_x)*math.sin(angle_position) + (init_y - center_y)*math.cos(angle_position) + center_y
+            house.x = round((init_x-center_x)*math.cos(angle_position) - (init_y - center_y)*math.sin(angle_position)) + center_x
+            house.y = round((init_x-center_x)*math.sin(angle_position) + (init_y - center_y)*math.cos(angle_position)) + center_y
 
     def populate_grid(self, init_x=150, init_y=150, padding=15):
         grid_size = math.ceil(math.sqrt(self.number_houses))
@@ -81,24 +89,23 @@ class CityShape(object):
             house.x = init_x + padding*x_pos
             house.y = init_y + padding*y_pos
 
-
-
-class House(object):
-    """ Defines a house where agents can move in and out """
-    def __init__(self, address, occupant_type, occupant_name):
-        self.occupied = True
-        self.occupant_type = occupant_type
-        self.occupant_name = occupant_name
+class Agent(object):
+    """ Define an agent of the game """
+    def __init__(self, color, tag, address, name):
+        self.color = color
+        self.type = tag
+        self.name = name
         self.address = address
-        self.y = 300
         self.x = 100 + 15*(self.address - 1)
+        self.y = 300
 
-    def draw(self, screen): 
-        pygame.draw.rect(screen, RED, [self.x - 7, self.y-7, 15, 15], 1)
+    def update_housing_info(self, house):
+        self.x = house.x + 7
+        self.y = house.y + 7
+        self.address = house.address
 
-    def update_house_info(self, occupant):
-        self.occupant_name = occupant.occupant_name
-        self.occupant_type = occupant.occupant_type
+    def draw(self, screen):
+        pygame.draw.circle(screen, self.color, [self.x+7, self.y+7], 7)
 
 class StateofNeighbourhood(object):
     """ 
