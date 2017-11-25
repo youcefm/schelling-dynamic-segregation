@@ -8,6 +8,6 @@ The current version of the project allows to visualize the dynamics of the "line
 
 The next step is to make the line model code more general, providing a solid framework for modifications and extensions. Other plans include adding the grid model as well as a circle model.
 
-# Requirements
+## Requirements
 - Python 3
 - Pygame package
