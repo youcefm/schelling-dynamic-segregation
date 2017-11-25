@@ -39,6 +39,8 @@ class Agent(object):
 
 # need a class CityShape that determines the shape of the city (line, grid, circle) and x,y coordinates for possible houses
 
+# test commit
+
 class House(object):
     """ Defines a house on the line or grid where agents can move in and out"""
     def __init__(self, address, occupant_type, occupant_name):
