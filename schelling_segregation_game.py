@@ -30,35 +30,72 @@ def text_to_screen(screen, text, x, y, size = 20,
 class House(object):
     """ Defines a house where agents can move in and out """
     def __init__(self, address, size=15, occupant_type ='', occupant_name =1): # remove legacy args when ready
-        self.occupied = True
-        self.occupant_type = occupant_type
-        self.occupant_name = occupant_name
+        self.occupied = False
+        self.occupant_type = occupant_type # remove when ready
+        self.occupant_name = occupant_name # remove when ready
         self.address = address
-        self.y = 300
-        self.x = 100 + 15*(self.address - 1)
+        self.y = 300 # remove when ready
+        self.x = 100 + 15*(self.address - 1) #remove when ready
         self.size = size
 
     def draw(self, screen): 
         pygame.draw.rect(screen, RED, [self.x , self.y , self.size, self.size], 1)
 
     def update_occcupant_info(self, occupant):
-        self.occupant_name = occupant.occupant_name
-        self.occupant_type = occupant.occupant_type
+        self.occupant_name = occupant.name
+        self.occupant_type = occupant.type
+        self.occupied = True
 
-class CityShape(object):
-    """ Populate a city with houses following a specific shape  """
-    def __init__(self, number_houses):
+class Agent(object):
+    """ Define an agent of the game """
+    def __init__(self, color, tag, address=1, name): #remove legacy args when ready
+        self.color = color
+        self.type = tag
+        self.name = name
+        self.address = address # remove when ready
+        self.x = 100 + 15*(self.address - 1)
+        self.y = 300
+
+    def draw(self, screen):
+        pygame.draw.circle(screen, self.color, [self.x+7, self.y+7], 7)
+
+    def update_housing_info(self, house):
+        self.address = house.address
+        self.x = house.x + 7
+        self.y = house.y + 7
+
+    def make_moving_decision(self, information):
+
+
+class UrbanDesign(object):
+    """ 
+        Populates a city with houses and agents, following a specific design.
+        The current designs are line, circle and grid. 
+    """
+    def __init__(self, number_houses, number_agents):
+        # need to raise exception when number_agents > number_houses 
         self.number_houses = number_houses
+        self.number_agents = number_agents
 
     def init_houses(self):
+        """ Initialize a dicitionary of house intstances """
         houses = {}
         for address in range(1,self.number_houses+1):
             houses[address] = House(address=address) 
         self.houses = houses
 
+    def init_agents(self, types = [('Black',BLACK), ('White',WHITE)], type_assignment='random'):
+        """ Initialize a dicitionary of agent intstances """
+        agents = {}
+        for name in range(1,self.number_agents+1):
+            tag, color = random.choice(types) # random assignment
+            agents[name] = Agent(color=color, tag=tag, name=name)
+        self.agents = agents 
+
     def populate_line(self, init_x=100, init_y=300, padding=15):
         """ populates a horizontal line of houses going from left to right, starting at (init_x, and init_y) """
         self.init_houses()
+        self.shape = 'Line'
         for address in self.houses:
             house = self.houses[address]
             house.y = init_y
@@ -67,6 +104,7 @@ class CityShape(object):
     def populate_circle(self, center = (600, 350), padding=15):
         """ populate a circle of houses clockwise, starting at the midnight position"""
         self.init_houses()
+        self.shape = 'Circle'
         center_x, center_y = center
         cironference = self.number_houses*padding
         radius = cironference/(2*math.pi)
@@ -82,30 +120,29 @@ class CityShape(object):
         grid_size = math.ceil(math.sqrt(self.number_houses))
         #self.number_houses = grid_size*grid_size
         self.init_houses()
+        self.shape = 'Grid'
         for address in self.houses:
-            y_pos  = math.floor(address/grid_size)
+            y_pos  = math.floor((address-1)/grid_size)
             x_pos = address % grid_size -1
             house = self.houses[address]
             house.x = init_x + padding*x_pos
             house.y = init_y + padding*y_pos
 
-class Agent(object):
-    """ Define an agent of the game """
-    def __init__(self, color, tag, address, name):
-        self.color = color
-        self.type = tag
-        self.name = name
-        self.address = address
-        self.x = 100 + 15*(self.address - 1)
-        self.y = 300
-
-    def update_housing_info(self, house):
-        self.x = house.x + 7
-        self.y = house.y + 7
-        self.address = house.address
-
-    def draw(self, screen):
-        pygame.draw.circle(screen, self.color, [self.x+7, self.y+7], 7)
+    def initial_match_of_agents_to_houses(self, matching_type='random'):
+        """ 
+            Performs initial matching of agents to houses. 
+            Matching type can be random or sequential 
+        """
+        available_houses = [address for address in self.houses]
+        for name in self.agents:
+            agent = self.agents[name]
+            if matching_type=='random':
+                address = random.choice(available_houses) # randomly match agent to available house
+                available_houses.remove(address) # remove house from list of available houses
+            else: address = name
+            house = self.houses[address]
+            agent.update_housing_info(house=house)
+            house.update_occcupant_info(occupant=agent)
 
 class StateofNeighbourhood(object):
     """ 
@@ -196,6 +233,15 @@ def move_sequence(start, end, State):
         house_dict[end].occupant_type = agent.type
         State.mover_list.remove(agent.name)
         return 
+
+#city = UrbanDesign(90, 90)
+#city.init_houses()
+#city.populate_line()
+#city.populate_circle()
+#city.populate_grid()
+#city.initial_match_of_agents_to_houses()
+#house_dict = city.houses
+#agent_dict = city.agents
 
 agent_dict = {}
 house_dict = {}
