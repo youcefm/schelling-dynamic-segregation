@@ -48,7 +48,7 @@ class House(object):
 
 class Agent(object):
     """ Define an agent of the game """
-    def __init__(self, color, tag, address=1, name): #remove legacy args when ready
+    def __init__(self, color, tag, name, address=1): #remove legacy args when ready
         self.color = color
         self.type = tag
         self.name = name
@@ -61,10 +61,11 @@ class Agent(object):
 
     def update_housing_info(self, house):
         self.address = house.address
-        self.x = house.x + 7
-        self.y = house.y + 7
+        self.x = house.x 
+        self.y = house.y 
 
     def make_moving_decision(self, information):
+        return
 
 
 class UrbanDesign(object):
@@ -133,6 +134,7 @@ class UrbanDesign(object):
             Performs initial matching of agents to houses. 
             Matching type can be random or sequential 
         """
+        self.init_agents()
         available_houses = [address for address in self.houses]
         for name in self.agents:
             agent = self.agents[name]
@@ -234,7 +236,7 @@ def move_sequence(start, end, State):
         State.mover_list.remove(agent.name)
         return 
 
-#city = UrbanDesign(90, 90)
+#city = UrbanDesign(70, 70)
 #city.init_houses()
 #city.populate_line()
 #city.populate_circle()
@@ -255,6 +257,8 @@ for ind in range(1,number_agents+1):
     house_dict[ind] = House(address = ind, occupant_type = tag, occupant_name = ind)
     agent_dict[ind] = Agent(color = color , tag = tag, address = ind, name = ind) 
     house_list.append(house_dict[ind])
+
+house_list = [house_dict.get(key) for key in house_dict]
 
 State = StateofNeighbourhood(house_list, 4) # Initiate state object
 #Open a window
