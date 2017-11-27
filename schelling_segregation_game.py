@@ -67,10 +67,11 @@ class House(object):
 
 class Agent(object):
     """ Define an agent of the game """
-    def __init__(self, color, tag, name, address=1): #remove legacy args when ready
+    def __init__(self, color, tag, name, minimum_same_type=0.5, address=1): #remove legacy args when ready
         self.color = color
         self.type = tag
         self.name = name
+        self.threshold = minimum_same_type
         self.address = address # remove when ready
         self.x = 100 + 15*(self.address - 1)
         self.y = 300
@@ -83,21 +84,20 @@ class Agent(object):
         self.x = house.x 
         self.y = house.y
 
-class LineModelAgent(Agent, minimum_same_type=0.5): 
-
-    self.threshold = minimum_same_type
-
-    def gather_information(self, houses):
-        neighbours_list = [address for address in range(max(1, self.address-NEIGHBOURHOOD_SIZE), min(len(houses_dict), self.address+NEIGHBOURHOOD_SIZE)+1) if address!=self.address]
-        neighbours = {address: house.occupant_type for (address, house) in houses.items() if address in neighbours_list}
-        return neighbours
+    def gather_information(self, houses, model='Line'):
+        neighbours_list = [address for address in \
+            range(max(1, self.address-NEIGHBOURHOOD_SIZE), \
+                min(len(houses_dict), self.address+NEIGHBOURHOOD_SIZE)+1) \
+            if address!=self.address]
+        information = {address: house.occupant_type for (address, house) in houses.items() \
+            if address in neighbours_list}
+        return information
 
     def make_moving_decision(self, houses, model='Line'):
-        information = gather_information(houses=houses)
+        information = gather_information(houses=houses, model=model)
         type_list = [information.get(key) for key in information]
         type_counts = Counter(type_list)
-        self.is_mover = type_counts[self.type]/sum(type_counts.values()) <threshold
-
+        self.is_mover = type_counts[self.type]/sum(type_counts.values()) < threshold
 
 class UrbanDesign(object):
     """ 
@@ -124,10 +124,11 @@ class UrbanDesign(object):
             agents[name] = Agent(color=color, tag=tag, name=name)
         self.agents = agents 
 
-    def populate_line(self, init_x=100, init_y=300, padding=15):
-        """ populates a horizontal line of houses going from left to right, starting at (init_x, and init_y) """
+    def populate_line(self, init_coord = (100,300), padding=15):
+        """ populates a horizontal line of houses going from left to right, starting at (init_x, init_y) """
         self.init_houses()
         self.shape = 'Line'
+        init_x, init_y = init_coord
         for address in self.houses:
             house = self.houses[address]
             house.y = init_y
