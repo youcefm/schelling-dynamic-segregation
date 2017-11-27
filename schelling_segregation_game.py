@@ -282,7 +282,7 @@ def move_sequence(start, end, State):
         new_x = round((agent.x-center_x)*math.cos(angular_speed) - (agent.y - center_y)*math.sin(angular_speed)) + center_x
         new_y = round((agent.x-center_x)*math.sin(angular_speed) + (agent.y - center_y)*math.cos(angular_speed)) + center_y
         agent.x = new_x
-        agent.y = new_y
+        agent.y = new_y 
     else: 
         for ind in range(1,number_displaced+1):
             agent_temp = agent_dict[house_dict[start -sign*ind].occupant_name]
