@@ -2,6 +2,7 @@ import pygame   # for visual interface
 import math
 import random
 import os
+from collections import Counter
 
 # Initialize the game engine
 pygame.init()
@@ -9,13 +10,13 @@ pygame.init()
 # Define some colors
 BLACK    = (   0,   0,   0)
 WHITE    = ( 255, 255, 255)
-GREY	 = (150, 150, 150)
+GREY	 = ( 150, 150, 150)
 GREEN    = (   0, 255,   0)
 RED      = ( 255,   0,   0)
 BLUE     = (   0,   0, 255)
 MYGREEN  = (  40, 100,  40)
-YELLOW 	 = (255, 255, 0)
-SAND 	 = (255, 255, 100)
+YELLOW 	 = ( 255, 255,   0)
+SAND 	 = ( 255, 255, 100)
 
 # Function that prints text on screen
 def text_to_screen(screen, text, x, y, size = 20,
@@ -25,18 +26,36 @@ def text_to_screen(screen, text, x, y, size = 20,
     text = font.render(text, True, color)
     screen.blit(text, (x, y))
 
-# Schelling Model objects
+# Function that applies a rotation to some coordinates around a center
+def apply_rotation(init_coord, center, angle):
+    init_x, init_y = init_coord
+    center_x, center_y = center
+    new_x = round((init_x-center_x)*math.cos(angle) - (init_y - center_y)*math.sin(angle)) + center_x
+    new_y = round((init_x-center_x)*math.sin(angle) + (init_y - center_y)*math.cos(angle)) + center_y
+    new_coord = (new_x, new_y)
+    return new_coord
+
+
+### Schelling Model objects ###
+
+#Parameters:
+NUMBER_OF_HOUSES = 70
+NUMBER_OF_AGENTS = 70
+SHAPE = 'Line'
+TYPES = [('Black',BLACK), ('White',WHITE)]
+NEIGHBOURHOOD_SIZE = 4
+HOUSE_SIZE = 15
 
 class House(object):
     """ Defines a house where agents can move in and out """
     def __init__(self, address, size=15, occupant_type ='', occupant_name =1): # remove legacy args when ready
         self.occupied = False
+        self.address = address
+        self.size = size
         self.occupant_type = occupant_type # remove when ready
         self.occupant_name = occupant_name # remove when ready
-        self.address = address
         self.y = 300 # remove when ready
         self.x = 100 + 15*(self.address - 1) #remove when ready
-        self.size = size
 
     def draw(self, screen): 
         pygame.draw.rect(screen, RED, [self.x , self.y , self.size, self.size], 1)
@@ -62,16 +81,28 @@ class Agent(object):
     def update_housing_info(self, house):
         self.address = house.address
         self.x = house.x 
-        self.y = house.y 
+        self.y = house.y
 
-    def make_moving_decision(self, information):
-        return
+class LineModelAgent(Agent, minimum_same_type=0.5): 
+
+    self.threshold = minimum_same_type
+
+    def gather_information(self, houses):
+        neighbours_list = [address for address in range(max(1, self.address-NEIGHBOURHOOD_SIZE), min(len(houses_dict), self.address+NEIGHBOURHOOD_SIZE)+1) if address!=self.address]
+        neighbours = {address: house.occupant_type for (address, house) in houses.items() if address in neighbours_list}
+        return neighbours
+
+    def make_moving_decision(self, houses, model='Line'):
+        information = gather_information(houses=houses)
+        type_list = [information.get(key) for key in information]
+        type_counts = Counter(type_list)
+        self.is_mover = type_counts[self.type]/sum(type_counts.values()) <threshold
 
 
 class UrbanDesign(object):
     """ 
         Populates a city with houses and agents, following a specific design.
-        The current designs are line, circle and grid. 
+        The current designs are line, Circle and Grid. 
     """
     def __init__(self, number_houses, number_agents):
         # need to raise exception when number_agents > number_houses 
@@ -110,12 +141,11 @@ class UrbanDesign(object):
         cironference = self.number_houses*padding
         radius = cironference/(2*math.pi)
         angle = (2*math.pi)/self.number_houses
-        init_x, init_y = center_x + radius, center_y + radius
+        init_coord = (center_x + radius, center_y + radius)
         for address in self.houses:
             house = self.houses[address]
-            angle_position = angle*(house.address - 1)  
-            house.x = round((init_x-center_x)*math.cos(angle_position) - (init_y - center_y)*math.sin(angle_position)) + center_x
-            house.y = round((init_x-center_x)*math.sin(angle_position) + (init_y - center_y)*math.cos(angle_position)) + center_y
+            angle_position = angle*(house.address - 1)
+            house.x, house.y = apply_rotation((init_coord), center, angle_position)
 
     def populate_grid(self, init_x=150, init_y=150, padding=15):
         grid_size = math.ceil(math.sqrt(self.number_houses))
