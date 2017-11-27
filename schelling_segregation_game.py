@@ -43,7 +43,7 @@ NUMBER_OF_HOUSES = 70
 NUMBER_OF_AGENTS = 70
 SHAPE = 'Line'
 TYPES = [('Black',BLACK), ('White',WHITE)]
-NEIGHBOURHOOD_SIZE = 4
+NEIGHBORHOOD_SIZE = 4
 HOUSE_SIZE = 15
 
 class House(object):
@@ -86,18 +86,18 @@ class Agent(object):
 
     def gather_information(self, houses, model='Line'):
         neighbours_list = [address for address in \
-            range(max(1, self.address-NEIGHBOURHOOD_SIZE), \
-                min(len(houses_dict), self.address+NEIGHBOURHOOD_SIZE)+1) \
+            range(max(1, self.address-NEIGHBORHOOD_SIZE), \
+                min(len(houses), self.address+NEIGHBORHOOD_SIZE)+1) \
             if address!=self.address]
         information = {address: house.occupant_type for (address, house) in houses.items() \
             if address in neighbours_list}
         return information
 
     def make_moving_decision(self, houses, model='Line'):
-        information = gather_information(houses=houses, model=model)
+        information = self.gather_information(houses=houses, model=model)
         type_list = [information.get(key) for key in information]
         type_counts = Counter(type_list)
-        self.is_mover = type_counts[self.type]/sum(type_counts.values()) < threshold
+        self.is_mover = type_counts[self.type]/sum(type_counts.values()) < self.threshold
 
 class UrbanDesign(object):
     """ 
@@ -177,21 +177,47 @@ class UrbanDesign(object):
             agent.update_housing_info(house=house)
             house.update_occcupant_info(occupant=agent)
 
-class StateofNeighbourhood(object):
+    def find_movers(self):
+        for name in self.agents:
+            self.agents[name].make_moving_decision(houses=self.houses, model=self.shape)
+
+class SimulateDynamics(object):
     """ 
-        For each house, defines composition of neighbourhood, list of movers in current round
+        Required data and methods to simulate moving dynamics
+    """
+    def __init__(self, city):
+        self.city=city
+        self.mover_list = []
+        self.equilibrium = False
+        self.round = 0
+
+    def current_movers(self):
+        self.city.find_movers()
+        if self.mover_list:
+            for name in self.mover_list:
+                if not self.city.agents[name].is_mover:
+                    self.mover_list.remove(name)
+        else:
+            self.round +=1
+            for name in self.city.agents:
+                if self.city.agents[name].is_mover:
+                    self.mover_list.append(name)
+
+class Stateofneighborhood(object):
+    """ 
+        For each house, defines composition of neighborhood, list of movers in current round
         also establishes if current situation is an equilibrium
     """
-    def __init__(self, houses, neighbourhood_size):
+    def __init__(self, houses, neighborhood_size):
         self.houses = houses
-        self.size = neighbourhood_size
+        self.size = neighborhood_size
         self.mover_list = []
         self.equilibrium = False
         self.round = 0
 
     def define_state(self):
         houses_dict = {house.address: house.occupant_type for house in self.houses}
-        neighbourhood_data = {}
+        neighborhood_data = {}
         for house in self.houses:
             pos = house.address
             #list_of_neighboors = [houses_dict.get(key) for key in range(max(1, pos-self.size), min(len(houses_dict), pos+self.size)+1) if key!=pos]
@@ -199,16 +225,16 @@ class StateofNeighbourhood(object):
             white_neighboors = list_of_neighboors.count('White')
             black_neighboors = list_of_neighboors.count('Black')
             total_neighboors = white_neighboors + black_neighboors
-            neighbourhood_data[pos] = {'number_whites': white_neighboors, 'number_blacks': black_neighboors,
+            neighborhood_data[pos] = {'number_whites': white_neighboors, 'number_blacks': black_neighboors,
             'minimum' : math.ceil(total_neighboors/2),
             'occupant_type': house.occupant_type, 'address': house.address, 'is_mover': False}
-        return neighbourhood_data
+        return neighborhood_data
 
     def find_movers(self):
-        neighbourhood_data = self.define_state()
+        neighborhood_data = self.define_state()
         equilibrium_indicator = True
-        for house in neighbourhood_data:
-            neighbour = neighbourhood_data[house]
+        for house in neighborhood_data:
+            neighbour = neighborhood_data[house]
             if (neighbour['occupant_type'] == 'Black')&(neighbour['number_blacks'] < neighbour['minimum']):
                 neighbour['is_mover'] = True
                 equilibrium_indicator = False
@@ -218,20 +244,25 @@ class StateofNeighbourhood(object):
             else :
                 neighbour['is_mover'] = False
         self.equilibrium = equilibrium_indicator
-        return neighbourhood_data
+        city.find_movers()
+        return neighborhood_data
 
     def current_movers(self):
-        neighbourhood_data = self.find_movers()
+        #neighborhood_data = self.find_movers()
         if self.mover_list:
             for mover in self.mover_list:
                 address = agent_dict[mover].address
-                if not neighbourhood_data[address]['is_mover']:
+                #if not neighborhood_data[address]['is_mover']:
+                if not city.agents[mover].is_mover:
                     self.mover_list.remove(mover)
         else:
             self.round +=1
-            for house in neighbourhood_data:
-                if neighbourhood_data[house]['is_mover']:
-                    self.mover_list.append(house_dict[house].occupant_name)
+            #for house in neighborhood_data:
+            for name in city.agents:
+                #if neighborhood_data[house]['is_mover']:
+                if city.agents[name].is_mover:
+                    #self.mover_list.append(house_dict[house].occupant_name)
+                    self.mover_list.append(name)
 
 
 def move_sequence(start, end, State):
@@ -267,31 +298,30 @@ def move_sequence(start, end, State):
         State.mover_list.remove(agent.name)
         return 
 
-#city = UrbanDesign(70, 70)
-#city.init_houses()
-#city.populate_line()
+city = UrbanDesign(70, 70)
+city.populate_line()
 #city.populate_circle()
 #city.populate_grid()
-#city.initial_match_of_agents_to_houses()
-#house_dict = city.houses
-#agent_dict = city.agents
+city.initial_match_of_agents_to_houses()
+house_dict = city.houses
+agent_dict = city.agents
 
-agent_dict = {}
-house_dict = {}
-house_list = []
+#agent_dict = {}
+#house_dict = {}
+#house_list = []
 agent_type = [('Black',BLACK), ('White',WHITE)]
 mixed_types = 35*agent_type
 number_agents = 70
-for ind in range(1,number_agents+1):
-    tag, color = random.choice(agent_type) # random start
-    #tag, color = mixed_types[ind-1]         # mixed neighbourhood state start
-    house_dict[ind] = House(address = ind, occupant_type = tag, occupant_name = ind)
-    agent_dict[ind] = Agent(color = color , tag = tag, address = ind, name = ind) 
-    house_list.append(house_dict[ind])
+#for ind in range(1,number_agents+1):
+#    tag, color = random.choice(agent_type) # random start
+    #tag, color = mixed_types[ind-1]         # mixed neighborhood state start
+#    house_dict[ind] = House(address = ind, occupant_type = tag, occupant_name = ind)
+#    agent_dict[ind] = Agent(color = color , tag = tag, address = ind, name = ind) 
+#    house_list.append(house_dict[ind])
 
 house_list = [house_dict.get(key) for key in house_dict]
 
-State = StateofNeighbourhood(house_list, 4) # Initiate state object
+State = Stateofneighborhood(house_list, 4) # Initiate state object
 #Open a window
 size = (1200, 700)
 screen = pygame.display.set_mode(size)
@@ -317,14 +347,14 @@ while not done:
                 house_dict[ind] = House(address = ind, occupant_type = tag, occupant_name = ind)
                 agent_dict[ind] = Agent(color = color , tag = tag, address = ind, name = ind) 
                 house_list.append(house_dict[ind])
-            State = StateofNeighbourhood(house_list, 4) # Initiate state object
+            State = Stateofneighborhood(house_list, 4) # Initiate state object
         elif (event.type == pygame.KEYDOWN and event.key == pygame.K_s): # restart simulation with mixed stable start
             for ind in range(1,number_agents+1):
-                tag, color = mixed_types[ind-1]         # mixed neighbourhood state start
+                tag, color = mixed_types[ind-1]         # mixed neighborhood state start
                 house_dict[ind] = House(address = ind, occupant_type = tag, occupant_name = ind)
                 agent_dict[ind] = Agent(color = color , tag = tag, address = ind, name = ind) 
                 house_list.append(house_dict[ind])
-            State = StateofNeighbourhood(house_list, 4) # Initiate state object
+            State = Stateofneighborhood(house_list, 4) # Initiate state object
 
         
  
@@ -340,26 +370,26 @@ while not done:
         agent.draw(screen)
 
     if not State.equilibrium:
-        neighbourhood_data = State.find_movers()
+        neighborhood_data = State.find_movers()
         State.current_movers()
         list_of_movers = State.mover_list
     #if True:
         for mover in list_of_movers:
             ind = agent_dict[mover].address
-            if neighbourhood_data[ind]['is_mover']:
+            if neighborhood_data[ind]['is_mover']:
                 start_ind = ind
                 radius = max(start_ind-1, number_agents - start_ind)
                 break
-        if neighbourhood_data[start_ind]['occupant_type'] == 'Black':
+        if neighborhood_data[start_ind]['occupant_type'] == 'Black':
             metric = 'number_blacks'
         else:
             metric = 'number_whites'
         for next_ind in range(1, radius+1):
-            if neighbourhood_data[max(1,start_ind - next_ind)][metric]>=neighbourhood_data[max(1,start_ind - next_ind)]['minimum']:
+            if neighborhood_data[max(1,start_ind - next_ind)][metric]>=neighborhood_data[max(1,start_ind - next_ind)]['minimum']:
                 end_ind = max(1,start_ind - next_ind)
                 move_sequence(start_ind,end_ind, State)
                 break
-            elif neighbourhood_data[min(start_ind + next_ind, number_agents)][metric]>=neighbourhood_data[min(start_ind + next_ind, number_agents)]['minimum']:
+            elif neighborhood_data[min(start_ind + next_ind, number_agents)][metric]>=neighborhood_data[min(start_ind + next_ind, number_agents)]['minimum']:
                 end_ind = min(start_ind + next_ind, number_agents)
                 move_sequence(start_ind,end_ind, State)
                 break
@@ -372,10 +402,10 @@ while not done:
     text_to_screen(screen, 'Mover List {0}'.format(list_of_movers), 10,40)
     text_to_screen(screen, 'Rounds: {0}'.format(State.round), 10, 60)
     text_to_screen(screen, 'Mover Address: {0}'.format(ind), 200, 60)
-    text_to_screen(screen, 'Mover Minimum: {0}'.format(neighbourhood_data[ind]['minimum']), 500, 60)
+    text_to_screen(screen, 'Mover Minimum: {0}'.format(neighborhood_data[ind]['minimum']), 500, 60)
     text_to_screen(screen, 'Mover White Neighboors: {0} and Black Neighboors: {1}'.format(
-        neighbourhood_data[ind]['number_whites'], 
-        neighbourhood_data[ind]['number_blacks']), 10, 100)
+        neighborhood_data[ind]['number_whites'], 
+        neighborhood_data[ind]['number_blacks']), 10, 100)
 
 
     # --- Go ahead and update the screen with what we've drawn.
