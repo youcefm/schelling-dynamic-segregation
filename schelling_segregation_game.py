@@ -55,7 +55,7 @@ class House(object):
         self.occupant_type = occupant_type # remove when ready
         self.occupant_name = occupant_name # remove when ready
         self.y = 300 # remove when ready
-        self.x = 100 + 15*(self.address - 1) #remove when ready
+        self.x = 10 + self.size*(self.address - 1) #remove when ready
 
     def draw(self, screen): 
         pygame.draw.rect(screen, RED, [self.x , self.y , self.size, self.size], 1)
@@ -73,7 +73,7 @@ class Agent(object):
         self.name = name
         self.threshold = minimum_same_type
         self.address = address # remove when ready
-        self.x = 100 + 15*(self.address - 1)
+        self.x = 10 + 15*(self.address - 1)
         self.y = 300
 
     def draw(self, screen):
@@ -98,6 +98,26 @@ class Agent(object):
         type_list = [information.get(key) for key in information]
         type_counts = Counter(type_list)
         self.is_mover = type_counts[self.type]/sum(type_counts.values()) < self.threshold
+
+    def find_nearest_new_house(self, houses, model='Line'):
+        candidate_houses = [houses.get(key).occupant_type for key in houses if key!=self.address]
+        start_pos = self.address -1
+        radius = max(start_pos - 1, len(candidate_houses) - start_pos)
+        for ind in range(0,radius+1):
+            key_plus = min(start_pos + ind, len(candidate_houses)) 
+            key_minus = max(start_pos - ind, 0) 
+            neighborhood_plus = candidate_houses[max(key_plus - NEIGHBORHOOD_SIZE-1,0): min(key_plus + NEIGHBORHOOD_SIZE, len(candidate_houses))]
+            type_counts = Counter(neighborhood_plus)
+            #import pdb; pdb.set_trace()
+            if type_counts[self.type]/sum(type_counts.values()) >= self.threshold:
+                return (key_plus +1) + 1
+            neighborhood_minus = candidate_houses[max(key_minus - NEIGHBORHOOD_SIZE, 0): min(key_minus + NEIGHBORHOOD_SIZE-1, len(candidate_houses))]
+            type_counts = Counter(neighborhood_minus)
+            if type_counts[self.type]/sum(type_counts.values()) >= self.threshold:
+                return key_minus + 1
+        return self.address # if no viable house is found
+
+    def move_sequence(self, new_address):
 
 class UrbanDesign(object):
     """ 
@@ -124,7 +144,7 @@ class UrbanDesign(object):
             agents[name] = Agent(color=color, tag=tag, name=name)
         self.agents = agents 
 
-    def populate_line(self, init_coord = (100,300), padding=15):
+    def populate_line(self, init_coord = (10,300), padding=15):
         """ populates a horizontal line of houses going from left to right, starting at (init_x, init_y) """
         self.init_houses()
         self.shape = 'Line'
@@ -194,14 +214,21 @@ class SimulateDynamics(object):
     def current_movers(self):
         self.city.find_movers()
         if self.mover_list:
-            for name in self.mover_list:
-                if not self.city.agents[name].is_mover:
-                    self.mover_list.remove(name)
+            for diade in self.mover_list:
+                if not self.city.agents[diade[1]].is_mover:
+                    self.mover_list.remove(diade)
         else:
             self.round +=1
             for name in self.city.agents:
                 if self.city.agents[name].is_mover:
-                    self.mover_list.append(name)
+                    address = self.city.agents[name].address
+                    self.mover_list.append((address, name))
+        self.mover_list.sort()
+
+    def determine_stability(self):
+        if self.mover_list:
+            self.equilibrium = False
+        else: self.equilibrium = True
 
 class Stateofneighborhood(object):
     """ 
@@ -287,7 +314,7 @@ def move_sequence(start, end, State):
         for ind in range(1,number_displaced+1):
             agent_temp = agent_dict[house_dict[start -sign*ind].occupant_name]
             agent_temp.address = start - sign*ind + sign
-            agent_temp.x = 100 + 15*(agent_temp.address -1)
+            agent_temp.x = 10 + 20*(agent_temp.address -1)
             house_dict[start - sign*ind + sign].occupant_name = agent_temp.name
             house_dict[start - sign*ind + sign].occupant_type = agent_temp.type
         agent.x = end_x
