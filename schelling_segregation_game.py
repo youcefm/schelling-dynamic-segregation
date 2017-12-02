@@ -239,8 +239,8 @@ class SimulateDynamics(object):
 
 def move_sequence(name, start, end, city, dynamics):
     occupant_name = name
-    start_x = city.houses[start].x
-    end_x = city.houses[end].x
+    start_x, start_y = city.houses[start].x, city.houses[start].y
+    end_x, end_y = city.houses[end].x, city.houses[end].y
     end_house = city.houses[end]
     number_displaced = abs(end-start) 
     if start_x < end_x:
@@ -248,7 +248,7 @@ def move_sequence(name, start, end, city, dynamics):
     else: 
         sign = 1
     center_x = round((end_x+start_x)/2)
-    center_y = 300
+    center_y = round((end_y+start_y)/2)
     angular_speed = math.pi/30
     agent = city.agents[occupant_name]
     if abs(agent.x - end_x) > 5:
