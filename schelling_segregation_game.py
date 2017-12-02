@@ -97,7 +97,11 @@ class Agent(object):
         information = self.gather_information(houses=houses, model=model)
         type_list = [information.get(key) for key in information]
         type_counts = Counter(type_list)
-        self.is_mover = type_counts[self.type]/sum(type_counts.values()) < self.threshold
+        if sum(type_counts.values()) == NEIGHBORHOOD_SIZE*2:
+            self.is_mover = type_counts[self.type]/sum(type_counts.values()) < self.threshold
+        else:
+            self.is_mover = (type_counts[self.type]+1)/(sum(type_counts.values())+1) < self.threshold
+
 
     def find_nearest_new_house(self, houses, model='Line'):
         candidate_houses = [houses.get(key).occupant_type for key in houses if key!=self.address]
@@ -108,22 +112,13 @@ class Agent(object):
             key_minus = max(start_pos - ind, 0) 
             neighborhood_plus = candidate_houses[max(key_plus - NEIGHBORHOOD_SIZE-1,0): min(key_plus + NEIGHBORHOOD_SIZE, len(candidate_houses))]
             type_counts = Counter(neighborhood_plus)
-            if sum(type_counts.values()) == NEIGHBORHOOD_SIZE*2:
-                if type_counts[self.type]/sum(type_counts.values()) >= self.threshold:
-                    return (key_plus +1) + 1
-                neighborhood_minus = candidate_houses[max(key_minus - NEIGHBORHOOD_SIZE, 0):\
-                min(key_minus + NEIGHBORHOOD_SIZE-1, len(candidate_houses)-1)]
-                type_counts = Counter(neighborhood_minus)
-                if type_counts[self.type]/sum(type_counts.values()) >= self.threshold:
-                    return key_minus + 1
-            else:
-                if type_counts[self.type]/sum(type_counts.values()) > self.threshold:
-                    return (key_plus +1) + 1
-                neighborhood_minus = candidate_houses[max(key_minus - NEIGHBORHOOD_SIZE, 0):\
-                min(key_minus + NEIGHBORHOOD_SIZE-1, len(candidate_houses)-1)]
-                type_counts = Counter(neighborhood_minus)
-                if type_counts[self.type]/sum(type_counts.values()) > self.threshold:
-                    return key_minus + 1
+            if type_counts[self.type]/sum(type_counts.values()) >= self.threshold:
+                return (key_plus +1) + 1
+            neighborhood_minus = candidate_houses[max(key_minus - NEIGHBORHOOD_SIZE, 0):\
+            min(key_minus + NEIGHBORHOOD_SIZE-1, len(candidate_houses)-1)]
+            type_counts = Counter(neighborhood_minus)
+            if type_counts[self.type]/sum(type_counts.values()) >= self.threshold:
+                return key_minus + 1
 
     #def move_sequence(self, new_address):
 
@@ -147,8 +142,9 @@ class UrbanDesign(object):
     def init_agents(self, types = [('Black',BLACK), ('White',WHITE)], type_assignment='random'):
         """ Initialize a dicitionary of agent intstances """
         agents = {}
+        type_list = round(self.number_agents/2)*types
         for name in range(1,self.number_agents+1):
-            tag, color = random.choice(types) # random assignment
+            tag, color = type_list[name-1]
             agents[name] = Agent(color=color, tag=tag, name=name)
         self.agents = agents 
 
@@ -277,16 +273,16 @@ city.populate_line()
 #city.populate_circle()
 #city.populate_grid()
 city.initial_match_of_agents_to_houses()
-house_dict = city.houses
-agent_dict = city.agents
+#house_dict = city.houses
+#agent_dict = city.agents
 
 dynamics = SimulateDynamics(city)
 
-agent_type = [('Black',BLACK), ('White',WHITE)]
-mixed_types = 35*agent_type
-number_agents = 70
+#agent_type = [('Black',BLACK), ('White',WHITE)]
+#mixed_types = 35*agent_type
+#number_agents = 70
 
-house_list = [house_dict.get(key) for key in house_dict]
+#house_list = [house_dict.get(key) for key in house_dict]
 
 #Open a window
 size = (1200, 700)
@@ -308,19 +304,11 @@ while not done:
         if (event.type == pygame.QUIT) or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE): # If user clicked close
             done = True # Flag that we are done so we exit this loop
         elif (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE): # restart simulation with random start
-            for ind in range(1,number_agents+1):
-                tag, color = random.choice(agent_type) # random start
-                house_dict[ind] = House(address = ind, occupant_type = tag, occupant_name = ind)
-                agent_dict[ind] = Agent(color = color , tag = tag, address = ind, name = ind) 
-                house_list.append(house_dict[ind])
-            State = Stateofneighborhood(house_list, 4) # Initiate state object
+            city.initial_match_of_agents_to_houses(matching_type='random') #random assignment
+            dynamics = SimulateDynamics(city)
         elif (event.type == pygame.KEYDOWN and event.key == pygame.K_s): # restart simulation with mixed stable start
-            for ind in range(1,number_agents+1):
-                tag, color = mixed_types[ind-1]         # mixed neighborhood state start
-                house_dict[ind] = House(address = ind, occupant_type = tag, occupant_name = ind)
-                agent_dict[ind] = Agent(color = color , tag = tag, address = ind, name = ind) 
-                house_list.append(house_dict[ind])
-            State = Stateofneighborhood(house_list, 4) # Initiate state object
+            city.initial_match_of_agents_to_houses(matching_type='alternate') # gives integrated and stable initial configuration
+            dynamics = SimulateDynamics(city)
 
         
  
