@@ -107,7 +107,7 @@ class Agent(object):
         candidate_houses = [houses.get(key).occupant_type for key in houses if key!=self.address]
         start_pos = self.address -1
         radius = max(start_pos - 1, len(candidate_houses) - start_pos)
-        for ind in range(0,radius+1):
+        for ind in range(0,radius):
             key_plus = min(start_pos + ind, len(candidate_houses)) 
             key_minus = max(start_pos - ind, 0) 
             neighborhood_plus = candidate_houses[max(key_plus - NEIGHBORHOOD_SIZE-1,0): min(key_plus + NEIGHBORHOOD_SIZE, len(candidate_houses))]
@@ -243,13 +243,13 @@ def move_sequence(name, start, end, city, dynamics):
     end_x, end_y = city.houses[end].x, city.houses[end].y
     end_house = city.houses[end]
     number_displaced = abs(end-start) 
-    if start_x < end_x:
+    if start < end:
         sign = -1
     else: 
         sign = 1
     center_x = round((end_x+start_x)/2)
     center_y = round((end_y+start_y)/2)
-    angular_speed = math.pi/30
+    angular_speed = math.pi/20
     agent = city.agents[occupant_name]
     if abs(agent.x - end_x) > 5:
         new_x = round((agent.x-center_x)*math.cos(angular_speed) - (agent.y - center_y)*math.sin(angular_speed)) + center_x
@@ -258,6 +258,7 @@ def move_sequence(name, start, end, city, dynamics):
         agent.y = new_y 
     else:
         for ind in range(1,number_displaced+1):
+            #import pdb; pdb.set_trace()
             house_temp = city.houses[start -sign*ind + sign]
             agent_temp = city.agents[city.houses[start -sign*ind].occupant_name]
             agent_temp.update_housing_info(house_temp)
@@ -268,10 +269,10 @@ def move_sequence(name, start, end, city, dynamics):
     return 
 
 
-city = UrbanDesign(70, 70)
-city.populate_line()
+city = UrbanDesign(200, 150)
+#city.populate_line()
 #city.populate_circle()
-#city.populate_grid()
+city.populate_grid()
 city.initial_match_of_agents_to_houses()
 #house_dict = city.houses
 #agent_dict = city.agents
