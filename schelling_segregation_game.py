@@ -48,14 +48,12 @@ HOUSE_SIZE = 15
 
 class House(object):
     """ Defines a house where agents can move in and out """
-    def __init__(self, address, size=15, occupant_type ='', occupant_name =1): # remove legacy args when ready
+    def __init__(self, address, size=15, occupant_type ='', occupant_name = 1): # remove legacy args when ready
         self.occupied = False
         self.address = address
         self.size = size
         self.occupant_type = occupant_type # remove when ready
         self.occupant_name = occupant_name # remove when ready
-        self.y = 300 # remove when ready
-        self.x = 10 + self.size*(self.address - 1) #remove when ready
 
     def draw(self, screen): 
         pygame.draw.rect(screen, RED, [self.x , self.y , self.size, self.size], 1)
@@ -67,14 +65,11 @@ class House(object):
 
 class Agent(object):
     """ Define an agent of the game """
-    def __init__(self, color, tag, name, minimum_same_type=0.5, address=1): #remove legacy args when ready
+    def __init__(self, color, tag, name, minimum_same_type=0.5):
         self.color = color
         self.type = tag
         self.name = name
         self.threshold = minimum_same_type
-        self.address = address # remove when ready
-        self.x = 10 + 15*(self.address - 1)
-        self.y = 300
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, [self.x+7, self.y+7], 7)
@@ -119,8 +114,6 @@ class Agent(object):
             type_counts = Counter(neighborhood_minus)
             if type_counts[self.type]/sum(type_counts.values()) >= self.threshold:
                 return key_minus + 1
-
-    #def move_sequence(self, new_address):
 
 class UrbanDesign(object):
     """ 
@@ -258,7 +251,6 @@ def move_sequence(name, start, end, city, dynamics):
         agent.y = new_y 
     else:
         for ind in range(1,number_displaced+1):
-            #import pdb; pdb.set_trace()
             house_temp = city.houses[start -sign*ind + sign]
             agent_temp = city.agents[city.houses[start -sign*ind].occupant_name]
             agent_temp.update_housing_info(house_temp)
@@ -274,16 +266,7 @@ city = UrbanDesign(200, 150)
 #city.populate_circle()
 city.populate_grid()
 city.initial_match_of_agents_to_houses()
-#house_dict = city.houses
-#agent_dict = city.agents
-
 dynamics = SimulateDynamics(city)
-
-#agent_type = [('Black',BLACK), ('White',WHITE)]
-#mixed_types = 35*agent_type
-#number_agents = 70
-
-#house_list = [house_dict.get(key) for key in house_dict]
 
 #Open a window
 size = (1200, 700)
