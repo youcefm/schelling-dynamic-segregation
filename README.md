@@ -6,7 +6,7 @@ This project is inspired by Thomas Schelling's 1971 paper ["Dynamic Models of Se
 # Purpose
 The goal of this project is to build a quality code base that allows to easily try variations of every aspect of the model. Some of the ideas can also be used to develop a general purpose Spatial Agent Based Modeling toolkit.
 
-Demo of a mdeofication to line model from Schelling's paper to be on a circle:
+Demo of a modefication to line model from Schelling's paper to be on a circle:
 ![alt text](https://github.com/youcefm/schelling-dynamic-segregation/blob/master/segregation_game_circle_demo.gif)
 
   
